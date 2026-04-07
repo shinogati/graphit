@@ -1,0 +1,16 @@
+[package]
+name = "graphit"
+version = "0.1.0"
+edition = "2024"
+description = "Graph it!"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[package.metadata.wapm]
+namespace = "shinogati"
+abi = "none"
+bindings = {wai-version = "0.1.0", exports = "graphit.wai"}
+
+[dependencies]
+wai-bindgen-rust = "0.2.3"
