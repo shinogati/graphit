@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "esbuild": "^0.28.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "rollup": "^4.60.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -28,5 +30,8 @@
     "vite": "^8.0.1",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.6.0"
+  },
+  "resolutions": {
+    "rollup": "npm@rollup/wasm-node"
   }
 }
