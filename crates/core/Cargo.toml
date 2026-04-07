@@ -1,0 +1,11 @@
+[package]
+name    = "graphit-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+graphit-utils = { path = "../utils" }
+anyhow.workspace   = true
+serde.workspace    = true
+tracing.workspace  = true
+thiserror.workspace = true

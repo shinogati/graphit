@@ -1,0 +1,15 @@
+[package]
+name    = "graphit-wasm"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+graphit-core = { path = "../core" }
+anyhow.workspace   = true
+serde.workspace    = true
+tracing.workspace  = true
+wasm-bindgen = "0.2.117"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+

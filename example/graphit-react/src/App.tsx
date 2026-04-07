@@ -8,6 +8,14 @@ import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
+  
+  // const graphit = graphit.getHandler();
+  
+  // graphmodel = graphit.getRoot();
+  // graphmodel.payload = {};
+  
+  // graphmodel.addNextChild(vid, );
+  // graphit.init(rootVertex, optionalConfigs);
 
   return (
     <>
@@ -18,7 +26,7 @@ function App() {
           <img src={viteLogo} className="vite" alt="Vite logo" />
         </div>
         <div>
-          <h1>Get started</h1>
+          <h1>Get started {delete_vertex(6)}</h1>
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
           </p>
