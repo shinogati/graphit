@@ -13,6 +13,8 @@ tracing   = "0.1"
 serde     = { version = "1", features = ["derive"] }
 tokio     = { version = "1", features = ["full"] }
 thiserror = "2"
+fnv = "1.0.7"
+rand = "0.10.0"
 
 [workspace.package]
 version      = "0.1.0"

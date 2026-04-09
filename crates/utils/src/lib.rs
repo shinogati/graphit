@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub fn human_bytes(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
@@ -8,6 +10,15 @@ pub fn human_bytes(bytes: u64) -> String {
         b if b >= MB => format!("{:.1} MB", b as f64 / MB as f64),
         b if b >= KB => format!("{:.1} KB", b as f64 / KB as f64),
         b            => format!("{} B", b),
+    }
+}
+
+pub fn generate_unique_u64(map: &HashMap<u64, ()>) -> u64 {
+    loop {
+        let num: u64 = rand::random();
+        if num >= 2 && !map.contains_key(&num) {
+            return num;
+        }
     }
 }
 
