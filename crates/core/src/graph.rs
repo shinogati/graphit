@@ -1,8 +1,9 @@
-use std::fmt::Debug;
+use crate::helper::get_rand_vid;
 use fnv::FnvHashMap;
+use std::fmt::Debug;
 
 #[derive(Debug)]
-struct Vertex<Payload = ()> {
+pub struct Vertex<Payload = ()> {
     label: String,
     step: u32,
     payload: Option<Payload>,
@@ -21,10 +22,15 @@ impl<Payload> Vertex<Payload> {
         self.step
     }
 
+    pub fn get_label(&self) -> &str {
+        &self.label
+    }
+
     pub fn get_payload(&self) -> Option<&Payload> {
         self.payload.as_ref()
     }
 }
+
 
 #[derive(Debug)]
 pub enum Edge<Payload = ()> {
@@ -39,24 +45,16 @@ pub struct Graph<Vertex, Edge> {
     edges: FnvHashMap<u32, Vec<(u32, Edge)>>,
 }
 
-impl<Payload> Graph<Vertex<Payload>, Edge<Payload>>  {
+impl<Payload> Graph<Vertex<Payload>, Edge<Payload>> {
     pub fn new(root_label: &str) -> Self {
         let mut g = Self {
             root_vid: None,
             vertices: FnvHashMap::default(),
             edges: FnvHashMap::default(),
         };
-        g.add_vertex(&g.get_rand_vid(), Vertex::<Payload>::new(root_label, None, None));
+        let vid = get_rand_vid(2, u32::MAX);
+        g.add_vertex(&vid, Vertex::<Payload>::new(root_label, None, None));
         g
-    }
-
-    fn get_rand_vid(&self) -> u32 {
-        loop {
-            let num: u32 = rand::random();
-            if num >= 2 && !self.vertices.contains_key(&num) {
-                break num;
-            }
-        }
     }
 
     /// Adds a vertex to the graph. If the graph is empty, the vertex is the root.
@@ -68,8 +66,13 @@ impl<Payload> Graph<Vertex<Payload>, Edge<Payload>>  {
         self.root_vid.unwrap()
     }
 
-    pub fn add_child(&mut self, parent_vid: &u32, mut child: Vertex<Payload>, edge_type: Option<Edge<Payload>>) -> Option<u32> {
-        let rand_vid = self.get_rand_vid();
+    pub fn add_child(
+        &mut self,
+        parent_vid: &u32,
+        mut child: Vertex<Payload>,
+        edge_type: Option<Edge<Payload>>,
+    ) -> Option<u32> {
+        let rand_vid = get_rand_vid(2, u32::MAX);
 
         if self.root_vid.is_none() {
             self.add_vertex(parent_vid, child);
@@ -83,11 +86,17 @@ impl<Payload> Graph<Vertex<Payload>, Edge<Payload>>  {
 
             match edge_type {
                 Some(e) => {
-                    self.edges.entry(*parent_vid).or_default().push((rand_vid, e));
+                    self.edges
+                        .entry(*parent_vid)
+                        .or_default()
+                        .push((rand_vid, e));
                     return Some(rand_vid);
-                },
+                }
                 None => {
-                    self.edges.entry(*parent_vid).or_default().push((rand_vid, Edge::Unidirectional(None)));
+                    self.edges
+                        .entry(*parent_vid)
+                        .or_default()
+                        .push((rand_vid, Edge::Unidirectional(None)));
                     return Some(rand_vid);
                 }
             }
@@ -106,6 +115,10 @@ impl<Payload> Graph<Vertex<Payload>, Edge<Payload>>  {
     pub fn get_edges(&self, vid: u32) -> Option<&Vec<(u32, Edge<Payload>)>> {
         self.edges.get(&vid)
     }
+
+    pub fn root_vid(&self) -> Option<u32> {
+        self.root_vid
+    }
 }
 
 struct Cursor<'a> {
@@ -113,9 +126,12 @@ struct Cursor<'a> {
     g: Box<&'a Graph<Vertex, Edge>>,
 }
 
-impl<'a> Cursor<'a>{
+impl<'a> Cursor<'a> {
     pub fn new(graph: &'a Graph<Vertex, Edge>) -> Self {
-        Cursor { g: Box::new(graph), current_node: graph.root_vid.unwrap() }
+        Cursor {
+            g: Box::new(graph),
+            current_node: graph.root_vid.unwrap(),
+        }
     }
 
     pub fn get_node(&self) -> Option<&Vertex> {
@@ -126,7 +142,9 @@ impl<'a> Cursor<'a>{
     }
 
     pub fn move_to(&mut self, vid: u32) -> Option<u32> {
-        let available_vids = self.get_edges().map(|edges| edges.iter().map(|e| e.0).collect::<Vec<u32>>());
+        let available_vids = self
+            .get_edges()
+            .map(|edges| edges.iter().map(|e| e.0).collect::<Vec<u32>>());
         match available_vids {
             Some(v) => {
                 if v.contains(&vid) {
@@ -135,8 +153,8 @@ impl<'a> Cursor<'a>{
                 } else {
                     None
                 }
-            },
-            None => None
+            }
+            None => None,
         }
     }
 }
@@ -146,46 +164,111 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        let mut graph = Graph::new("Start");
-
+    fn build_graph() {
+        let graph = sample_graph();
         let root_id = graph.root_vid.unwrap();
         match graph.get_vertex(root_id) {
             Some(vertex) => {
                 assert_eq!(vertex.label, "Start");
-            },
+            }
             None => {
                 panic!("Vertex with ID {} not found", root_id);
             }
         }
-
-        let new_pricing_strategy_id = graph.add_child(&root_id, Vertex::new("New Price Strategy", None, None), None).unwrap();
-
-        let pricing_distribution_id = graph.add_child(&new_pricing_strategy_id, Vertex::new("Pricing Distribution", None, None), None).unwrap();
-        graph.add_child(&pricing_distribution_id, Vertex::new("Return Revenue", None, None), None).unwrap();
-        graph.add_child(&pricing_distribution_id, Vertex::new("Set Min & Max", None, None), None).unwrap();
-
-        graph.add_child(&new_pricing_strategy_id, Vertex::<()>::new("Overwrite", None, None), None).unwrap();
-
-        graph.add_child(&root_id, Vertex::<()>::new("Adjust Live Pricing", None, None), None);
-
-        let end_live_experiment_id = graph.add_child(&root_id, Vertex::<()>::new("End Live Experiment", None, None), None).unwrap();
-        graph.add_child(&end_live_experiment_id, Vertex::new("Roll out", None, None), None);
-        graph.add_child(&end_live_experiment_id, Vertex::new("Roll back", None, None), None);
-
         println!("{:?}", graph);
-
-        let mut cursor = Cursor::new(&graph);
-
-        println!("Cursor pointing at node: {:?}", cursor.get_node());
-        println!("Cursor node has edges: {:?}", cursor.get_edges());
-
-        cursor.move_to(new_pricing_strategy_id).unwrap();
-
-        println!("Cursor pointing at node: {:?}", cursor.get_node());
-        println!("Cursor node has edges: {:?}", cursor.get_edges());
-
-
         assert_eq!(4, 4);
+    }
+
+    #[test]
+    fn cursor_moves() {
+        let graph = sample_graph();
+        let mut cursor = Cursor::new(&graph);
+        let available_vids = cursor
+            .get_edges()
+            .map(|edges| edges.iter().map(|e| e.0).collect::<Vec<u32>>());
+
+        println!("Cursor pointing at node: {:?}", cursor.get_node());
+        println!("Cursor node has edges: {:?}", cursor.get_edges());
+
+        match cursor.move_to(available_vids.unwrap()[0]) {
+            Some(vid) => {
+                println!("Moved to node: {:?}", vid);
+            }
+            None => {
+                panic!("Node not found");
+            }
+        }
+
+        println!("Cursor pointing at node: {:?}", cursor.get_node());
+        println!("Cursor node has edges: {:?}", cursor.get_edges());
+    }
+
+    fn sample_graph() -> Graph<Vertex, Edge> {
+        let mut graph = Graph::new("Start");
+
+        let root_id = graph.root_vid.unwrap();
+
+        let new_pricing_strategy_id = graph
+            .add_child(
+                &root_id,
+                Vertex::new("New Price Strategy", None, None),
+                None,
+            )
+            .unwrap();
+
+        let pricing_distribution_id = graph
+            .add_child(
+                &new_pricing_strategy_id,
+                Vertex::new("Pricing Distribution", None, None),
+                None,
+            )
+            .unwrap();
+        graph
+            .add_child(
+                &pricing_distribution_id,
+                Vertex::new("Return Revenue", None, None),
+                None,
+            )
+            .unwrap();
+        graph
+            .add_child(
+                &pricing_distribution_id,
+                Vertex::new("Set Min & Max", None, None),
+                None,
+            )
+            .unwrap();
+
+        graph
+            .add_child(
+                &new_pricing_strategy_id,
+                Vertex::<()>::new("Overwrite", None, None),
+                None,
+            )
+            .unwrap();
+
+        graph.add_child(
+            &root_id,
+            Vertex::<()>::new("Adjust Live Pricing", None, None),
+            None,
+        );
+
+        let end_live_experiment_id = graph
+            .add_child(
+                &root_id,
+                Vertex::<()>::new("End Live Experiment", None, None),
+                None,
+            )
+            .unwrap();
+        graph.add_child(
+            &end_live_experiment_id,
+            Vertex::new("Roll out", None, None),
+            None,
+        );
+        graph.add_child(
+            &end_live_experiment_id,
+            Vertex::new("Roll back", None, None),
+            None,
+        );
+        graph
     }
 }
