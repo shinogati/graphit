@@ -120,6 +120,86 @@ impl WasmGraph {
                 .collect()
         })
     }
+
+    /// Creates a cursor starting at the root vertex.
+    /// Returns `undefined` if the graph has no root yet.
+    #[wasm_bindgen(js_name = cursor)]
+    pub fn cursor(&self) -> Option<WasmCursor> {
+        self.0.root_vid().map(|vid| WasmCursor { current_vid: vid })
+    }
+}
+
+/// A cursor that tracks a position inside a `WasmGraph`.
+///
+/// Because `wasm-bindgen` cannot express lifetime parameters on exported types,
+/// the cursor owns only the current VID and receives a `&WasmGraph` on each
+/// operation — mirroring the core `Cursor` interface.
+#[wasm_bindgen]
+pub struct WasmCursor {
+    current_vid: u32,
+}
+
+#[wasm_bindgen]
+impl WasmCursor {
+    /// Creates a cursor positioned at the root vertex of `graph`.
+    /// Mirrors `Cursor::new(&graph)` from core.
+    /// Throws if the graph has no root vertex.
+    #[wasm_bindgen(constructor)]
+    pub fn new(graph: &WasmGraph) -> Result<WasmCursor, JsValue> {
+        graph
+            .0
+            .root_vid()
+            .map(|vid| WasmCursor { current_vid: vid })
+            .ok_or_else(|| JsValue::from_str("Graph has no root vertex"))
+    }
+
+    /// The VID the cursor is currently pointing at.
+    #[wasm_bindgen(getter, js_name = currentVid)]
+    pub fn current_vid(&self) -> u32 {
+        self.current_vid
+    }
+
+    /// Returns vertex data for the current position.
+    #[wasm_bindgen(js_name = getNode)]
+    pub fn get_node(&self, graph: &WasmGraph) -> Option<WasmVertex> {
+        graph.0.get_vertex(self.current_vid).map(|v| WasmVertex {
+            label: v.get_label().to_string(),
+            step: v.get_step(),
+        })
+    }
+
+    /// Returns the adjacency list for the current vertex.
+    #[wasm_bindgen(js_name = getEdges)]
+    pub fn get_edges(&self, graph: &WasmGraph) -> Option<Vec<JsValue>> {
+        graph.0.get_edges(self.current_vid).map(|edges| {
+            edges
+                .iter()
+                .map(|(target_vid, edge)| {
+                    JsValue::from(WasmEdgeEntry {
+                        target_vid: *target_vid,
+                        bidirectional: matches!(edge, Edge::Bidirectional(_)),
+                    })
+                })
+                .collect()
+        })
+    }
+
+    /// Moves the cursor to `vid` if it is a direct neighbour of the current vertex.
+    /// Returns the new VID on success, or `undefined` if the move is not allowed.
+    #[wasm_bindgen(js_name = moveTo)]
+    pub fn move_to(&mut self, graph: &WasmGraph, vid: u32) -> Option<u32> {
+        let reachable = graph
+            .0
+            .get_edges(self.current_vid)
+            .map(|edges| edges.iter().any(|(t, _)| *t == vid))
+            .unwrap_or(false);
+        if reachable {
+            self.current_vid = vid;
+            Some(vid)
+        } else {
+            None
+        }
+    }
 }
 
 /// Creates a new graph with a root vertex labelled `name`.
