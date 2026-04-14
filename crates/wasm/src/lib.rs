@@ -125,7 +125,7 @@ impl WasmGraph {
     /// Returns `undefined` if the graph has no root yet.
     #[wasm_bindgen(js_name = cursor)]
     pub fn cursor(&self) -> Option<WasmCursor> {
-        self.0.root_vid().map(|vid| WasmCursor { current_vid: vid })
+        self.0.root_vid().map(|vid| WasmCursor { current_vid: vid, path: vec![vid] })
     }
 }
 
@@ -137,6 +137,7 @@ impl WasmGraph {
 #[wasm_bindgen]
 pub struct WasmCursor {
     current_vid: u32,
+    path: Vec<u32>,
 }
 
 #[wasm_bindgen]
@@ -149,7 +150,7 @@ impl WasmCursor {
         graph
             .0
             .root_vid()
-            .map(|vid| WasmCursor { current_vid: vid })
+            .map(|vid| WasmCursor { current_vid: vid, path: vec![vid] })
             .ok_or_else(|| JsValue::from_str("Graph has no root vertex"))
     }
 
@@ -195,10 +196,31 @@ impl WasmCursor {
             .unwrap_or(false);
         if reachable {
             self.current_vid = vid;
+            self.path.push(vid);
             Some(vid)
         } else {
             None
         }
+    }
+
+    /// Steps back to the previous vertex in the traversal history.
+    /// Returns the previous VID, or `undefined` if already at the root.
+    #[wasm_bindgen(js_name = back)]
+    pub fn back(&mut self) -> Option<u32> {
+        if self.path.len() > 1 {
+            self.path.pop();
+            let prev = *self.path.last().unwrap();
+            self.current_vid = prev;
+            Some(prev)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the full traversal history as an array of VIDs, root first.
+    #[wasm_bindgen(js_name = getPath)]
+    pub fn get_path(&self) -> Vec<u32> {
+        self.path.clone()
     }
 }
 

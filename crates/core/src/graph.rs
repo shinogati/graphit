@@ -124,13 +124,16 @@ impl<Payload> Graph<Vertex<Payload>, Edge<Payload>> {
 struct Cursor<'a> {
     current_node: u32,
     g: Box<&'a Graph<Vertex, Edge>>,
+    path: Vec<u32>,
 }
 
 impl<'a> Cursor<'a> {
     pub fn new(graph: &'a Graph<Vertex, Edge>) -> Self {
+        let root = graph.root_vid.unwrap();
         Cursor {
             g: Box::new(graph),
-            current_node: graph.root_vid.unwrap(),
+            current_node: root,
+            path: vec![root],
         }
     }
 
@@ -141,6 +144,9 @@ impl<'a> Cursor<'a> {
         self.g.get_edges(self.current_node)
     }
 
+    pub fn get_path(&self) -> Vec<u32> {
+        self.path.clone()
+    }
     pub fn move_to(&mut self, vid: u32) -> Option<u32> {
         let available_vids = self
             .get_edges()
@@ -149,12 +155,23 @@ impl<'a> Cursor<'a> {
             Some(v) => {
                 if v.contains(&vid) {
                     self.current_node = vid;
+                    self.path.push(vid);
                     Some(vid)
                 } else {
                     None
                 }
             }
             None => None,
+        }
+    }
+    pub fn back(&mut self) -> Option<u32> {
+        if self.path.len() > 1 {
+            self.path.pop();
+            let prev = *self.path.last().unwrap();
+            self.current_node = prev;
+            Some(prev)
+        } else {
+            None
         }
     }
 }
