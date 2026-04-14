@@ -29,6 +29,10 @@ impl<Payload> Vertex<Payload> {
     pub fn get_payload(&self) -> Option<&Payload> {
         self.payload.as_ref()
     }
+
+    pub fn set_payload(&mut self, payload: Payload) {
+        self.payload = Some(payload);
+    }
 }
 
 
@@ -118,6 +122,13 @@ impl<Payload> Graph<Vertex<Payload>, Edge<Payload>> {
 
     pub fn root_vid(&self) -> Option<u32> {
         self.root_vid
+    }
+
+    pub fn set_payload(&mut self, vid: u32, payload: Payload) -> bool {
+        match self.vertices.get_mut(&vid) {
+            Some(v) => { v.set_payload(payload); true }
+            None => false,
+        }
     }
 }
 

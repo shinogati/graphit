@@ -4,13 +4,14 @@ use wasm_bindgen::prelude::*;
 use graphit_core::graph::{Edge, Graph, Vertex};
 
 #[wasm_bindgen]
-pub struct WasmGraph(Graph<Vertex, Edge>);
+pub struct WasmGraph(Graph<Vertex<String>, Edge<String>>);
 
 /// Vertex data returned from `WasmGraph::get_vertex`.
 #[wasm_bindgen]
 pub struct WasmVertex {
     label: String,
     step: u32,
+    payload: Option<String>,
 }
 
 #[wasm_bindgen]
@@ -23,6 +24,12 @@ impl WasmVertex {
     #[wasm_bindgen(getter)]
     pub fn step(&self) -> u32 {
         self.step
+    }
+
+    /// The JSON payload stored on this vertex, or `undefined` if none has been set.
+    #[wasm_bindgen(getter)]
+    pub fn payload(&self) -> Option<String> {
+        self.payload.clone()
     }
 }
 
@@ -100,6 +107,7 @@ impl WasmGraph {
         self.0.get_vertex(vid).map(|v| WasmVertex {
             label: v.get_label().to_string(),
             step: v.get_step(),
+            payload: v.get_payload().cloned(),
         })
     }
 
@@ -119,6 +127,19 @@ impl WasmGraph {
                 })
                 .collect()
         })
+    }
+
+    /// Stores a JSON string as the payload of vertex `vid`.
+    /// Returns `true` on success, `false` if `vid` does not exist.
+    #[wasm_bindgen(js_name = setPayload)]
+    pub fn set_payload(&mut self, vid: u32, json: String) -> bool {
+        self.0.set_payload(vid, json)
+    }
+
+    /// Returns the JSON payload of vertex `vid`, or `undefined` if none is set.
+    #[wasm_bindgen(js_name = getPayload)]
+    pub fn get_payload(&self, vid: u32) -> Option<String> {
+        self.0.get_vertex(vid)?.get_payload().cloned()
     }
 
     /// Creates a cursor starting at the root vertex.
@@ -166,6 +187,7 @@ impl WasmCursor {
         graph.0.get_vertex(self.current_vid).map(|v| WasmVertex {
             label: v.get_label().to_string(),
             step: v.get_step(),
+            payload: v.get_payload().cloned(),
         })
     }
 
@@ -227,5 +249,5 @@ impl WasmCursor {
 /// Creates a new graph with a root vertex labelled `name`.
 #[wasm_bindgen(js_name = createGraph)]
 pub fn create_graph(name: &str) -> WasmGraph {
-    WasmGraph(Graph::new(name))
+    WasmGraph(Graph::<Vertex<String>, Edge<String>>::new(name))
 }
