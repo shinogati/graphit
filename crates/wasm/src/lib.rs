@@ -1,5 +1,5 @@
 mod helper;
-
+use std::fmt;
 use wasm_bindgen::prelude::*;
 use graphit_core::graph::{Edge, Graph, Vertex};
 
@@ -31,6 +31,14 @@ impl WasmVertex {
 pub struct WasmEdgeEntry {
     target_vid: u32,
     bidirectional: bool,
+}
+
+impl fmt::Display for WasmEdgeEntry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let symbol = if self.bidirectional { '◻' } else { '◼' };
+        write!(f, "{}", symbol)?;
+        Ok(())
+    }
 }
 
 #[wasm_bindgen]
