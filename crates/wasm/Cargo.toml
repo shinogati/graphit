@@ -1,5 +1,5 @@
 [package]
-name    = "graphit-wasm"
+name    = "graphit"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

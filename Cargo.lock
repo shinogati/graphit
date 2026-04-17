@@ -91,6 +91,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "graphit"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "console_error_panic_hook",
+ "fnv",
+ "getrandom",
+ "graphit-core",
+ "rand",
+ "serde",
+ "tracing",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "graphit-core"
 version = "0.1.0"
 dependencies = [
@@ -108,21 +123,6 @@ name = "graphit-utils"
 version = "0.1.0"
 dependencies = [
  "rand",
-]
-
-[[package]]
-name = "graphit-wasm"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "console_error_panic_hook",
- "fnv",
- "getrandom",
- "graphit-core",
- "rand",
- "serde",
- "tracing",
- "wasm-bindgen",
 ]
 
 [[package]]

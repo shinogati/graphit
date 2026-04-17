@@ -1,1 +1,7 @@
-wasm-pack build
+# Graph It!
+## WASM interface
+
+install with:
+```shell
+npm i @shinogati/graphit
+```
