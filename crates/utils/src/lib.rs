@@ -1,6 +1,4 @@
 
-#[cfg(not(target_family = "wasm"))]
-use rand::{Rng};
 pub fn human_bytes(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
