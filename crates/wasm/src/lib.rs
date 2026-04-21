@@ -140,7 +140,7 @@ impl WasmGraph {
     #[wasm_bindgen(js_name = setEdgePayload)]
     pub fn set_edge_payload(&mut self, eid: u32, data_str: String) -> bool {
         match self.0.get_edges(eid.try_into().unwrap()) {
-            Some(edge) => {
+            Some(_edge) => {
                 self.0.set_payload(eid, data_str);
                 true
             }

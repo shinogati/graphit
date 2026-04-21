@@ -2,6 +2,12 @@
 name    = "graphit-utils"
 version      = "0.0.5"
 edition.workspace    = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description.workspace = true
+homepage.workspace = true
+readme.workspace = true
 
 [dependencies]
-rand = "0.10.0"
+rand.workspace = true
