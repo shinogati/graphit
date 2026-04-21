@@ -1,6 +1,6 @@
 [package]
 name    = "graphit"
-version.workspace = true
+version      = "0.0.5"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -8,13 +8,8 @@ repository.workspace = true
 description.workspace = true
 
 [dependencies]
-graphit-core = { path = "../core" }
-anyhow.workspace   = true
-serde.workspace    = true
-tracing.workspace  = true
+graphit-core = { path = "../core", version = "0.0.5" }
 wasm-bindgen = "0.2.117"
-console_error_panic_hook = {version = "0.1.7", optional = true}
-fnv.workspace = true
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 rand.workspace = true
 
