@@ -17,9 +17,11 @@ fnv = "1.0.7"
 rand = "0.10.0"
 
 [workspace.package]
-version      = "0.1.0"
+version      = "0.0.5"
 authors      = ["Hossein Fakhari fakhari.hossein@gmail.com"]
 edition      = "2021"
 license      = "MIT"
 repository   = "https://github.com/shinogati/graphit"
-description = "Graph it!"
+description = "Just Graph it!"
+homepage = "https://shinogati.github.io/graphit/"
+readme = "README.md"

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <radialGradient gradientUnits="userSpaceOnUse" cx="256.684" cy="183.98" r="210.523" id="gradient-0" spreadMethod="pad" gradientTransform="matrix(1.49675, -0.553899, 0.249968, 0.675467, -173.496866, 201.885155)">
+      <stop offset="0" style=""/>
+      <stop offset="1" style="stop-color: rgb(206, 65, 43);"/>
+    </radialGradient>
+    <radialGradient gradientUnits="userSpaceOnUse" cx="256.684" cy="183.98" r="210.523" id="gradient-1" gradientTransform="matrix(0.54453, -0.554426, 0.663102, 0.651267, -5.085782, 206.472227)">
+      <stop offset="0" style="stop-color: rgb(0, 0, 0)"/>
+      <stop offset="1" style=""/>
+    </radialGradient>
+    <radialGradient gradientUnits="userSpaceOnUse" cx="331.348" cy="142.843" r="9.55" id="gradient-2">
+      <stop offset="0" style="stop-color: rgb(255, 255, 255)"/>
+      <stop offset="1" style="stop-color: rgb(56.687% 56.687% 56.687%)"/>
+    </radialGradient>
+    <radialGradient gradientUnits="userSpaceOnUse" cx="331.348" cy="142.843" r="9.55" id="gradient-3" gradientTransform="matrix(1.266831, -0.265357, 0.027617, 0.498146, -190.116552, 177.841214)">
+      <stop offset="0" style="stop-color: rgb(255, 255, 255)"/>
+      <stop offset="1" style="stop-color: rgb(56.687% 56.687% 56.687%)"/>
+    </radialGradient>
+  </defs>
+  <path style="fill: url(&quot;#gradient-0&quot;); fill-rule: nonzero; paint-order: stroke; stroke: url(&quot;#gradient-1&quot;);" d="M 364.125 271.588 L 363.85 235.284 L 465.586 234.16 L 464.597 300 L 47.608 300 C 47.608 300 32.562 234.435 99.486 167.938 C 166.41 101.441 257.92 63.501 317.052 68.379 C 376.184 73.257 453.096 93.204 461.7 127.673 C 470.304 162.142 466.256 202.811 466.256 202.811 L 382.643 202.399 C 382.643 202.399 368.165 154.872 275.352 167.674 C 182.539 180.476 187.292 269.896 187.292 269.896 C 187.292 269.896 363.656 272.547 364.125 271.588 Z"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); transform-box: fill-box; transform-origin: 50% 50%; fill: rgb(183, 65, 14);" transform="matrix(0.903916, 0.42771, -0.42771, 0.903916, -8.491291, 13.649758)"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); stroke-width: 1; transform-origin: 435.315px 66.578px; fill: rgb(183, 65, 14);" transform="matrix(0.960297, 0.27898, -0.27898, 0.960297, -42.590941, 1.025438)"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); stroke-width: 1; fill: rgb(183, 65, 14); transform-origin: 435.315px 66.578px;" transform="matrix(0.983893, 0.178759, -0.178759, 0.983893, -77.595742, -6.693931)"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); stroke-width: 1; fill: rgb(183, 65, 14); transform-origin: 435.315px 66.578px;" transform="matrix(0.994286, 0.106752, -0.106752, 0.994286, -112.319512, -12.108703)"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); stroke-width: 1; fill: rgb(183, 65, 14); transform-origin: 435.315px 66.578px;" transform="matrix(0.9906, -0.136787, 0.136787, 0.9906, -148.83, -11.676524)"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); stroke-width: 1; fill: rgb(183, 65, 14); transform-origin: 435.315px 66.578px;" transform="matrix(0.962893, -0.269882, 0.269882, 0.962893, -184.276116, -4.533356)"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); stroke-width: 1; fill: rgb(183, 65, 14); transform-origin: 435.315px 66.578px;" transform="matrix(0.924682, -0.38074, 0.38074, 0.924682, -218.38772, 6.803185)"/>
+  <path d="M 429.796 55.548 Q 432.927 49.729 437.044 55.548 L 450.591 74.699 Q 454.708 80.518 447.46 80.518 L 423.609 80.518 Q 416.361 80.518 419.492 74.699 Z" bx:shape="triangle 416.361 49.729 38.347 30.789 0.432 0.189 1@d5c54b28" style="stroke: rgb(0, 0, 0); stroke-width: 1; fill: rgb(183, 65, 14); transform-origin: 435.315px 66.578px;" transform="matrix(0.887967, -0.459908, 0.459908, 0.887967, -251.402913, 22.417831)"/>
+  <text style="white-space: pre; fill: rgb(51, 51, 51); font-family: Arial, sans-serif; font-size: 113.9px;" x="47.17" y="399.914">RAPHIT</text>
+  <path style="fill: none; stroke: url(&quot;#gradient-2&quot;); paint-order: stroke;" d="M 321.798 166.666 L 322.835 151.589 L 332.976 147.8 L 325.493 140.312 L 340.899 129.98 L 335.817 119.02"/>
+  <path style="fill: none; paint-order: stroke; stroke: url(&quot;#gradient-3&quot;); stroke-width: 1; transform-origin: 233.592px 161.071px;" d="M 222.15 175.473 L 223.048 167.687 L 235.79 163.108 L 226.104 161.364 L 245.335 152.129 L 238.595 148.018" transform="matrix(0.584489, -0.811401, 0.811401, 0.584489, -0.000001, 0.000005)"/>
+</svg>

@@ -1,3 +1,0 @@
-/// returns the version of Graphit
-version: func() -> string
-add-vertex: func(vrtx: u32) -> u32

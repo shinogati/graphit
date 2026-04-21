@@ -1,4 +1,5 @@
 mod helper;
+use std::option::Option;
 use std::fmt;
 use wasm_bindgen::prelude::*;
 use graphit_core::graph::{Edge, Graph, Vertex};
@@ -10,7 +11,7 @@ pub struct WasmGraph(Graph<Vertex<String>, Edge<String>>);
 #[wasm_bindgen]
 pub struct WasmVertex {
     label: String,
-    step: u32,
+    step: isize,
     payload: Option<String>,
 }
 
@@ -22,7 +23,7 @@ impl WasmVertex {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn step(&self) -> u32 {
+    pub fn step(&self) -> isize {
         self.step
     }
 
@@ -132,8 +133,24 @@ impl WasmGraph {
     /// Stores a JSON string as the payload of vertex `vid`.
     /// Returns `true` on success, `false` if `vid` does not exist.
     #[wasm_bindgen(js_name = setPayload)]
-    pub fn set_payload(&mut self, vid: u32, json: String) -> bool {
-        self.0.set_payload(vid, json)
+    pub fn set_payload(&mut self, vid: u32, data_str: String) -> bool {
+        self.0.set_payload(vid, data_str)
+    }
+
+    #[wasm_bindgen(js_name = setEdgePayload)]
+    pub fn set_edge_payload(&mut self, eid: u32, data_str: String) -> bool {
+        match self.0.get_edges(eid.try_into().unwrap()) {
+            Some(edge) => {
+                self.0.set_payload(eid, data_str);
+                true
+            }
+            None => false,
+        }
+    }
+
+    #[wasm_bindgen(js_name = getEdgePayload)]
+    pub fn get_edge_payload(&self, eid: u32) -> Option<String> {
+        self.0.get_vertex(eid)?.get_payload().cloned()
     }
 
     /// Returns the JSON payload of vertex `vid`, or `undefined` if none is set.

@@ -5,20 +5,22 @@ use std::fmt::Debug;
 #[derive(Debug)]
 pub struct Vertex<Payload = ()> {
     label: String,
-    step: u32,
+    step: isize,
     payload: Option<Payload>,
+    cache: std::collections::HashMap<u32, Vec<u8>>,
 }
 impl<Payload> Vertex<Payload> {
-    pub fn new(name: &str, payload: Option<Payload>, p_step: Option<u32>) -> Self {
-        let step = p_step.unwrap_or(0);
+    pub fn new(name: &str, payload: Option<Payload>, p_step: Option<isize>) -> Self {
+        let step = p_step.unwrap_or(-1);
         Self {
             label: name.to_string(),
             step: step + 1,
             payload,
+            cache: std::collections::HashMap::new(),
         }
     }
 
-    pub fn get_step(&self) -> u32 {
+    pub fn get_step(&self) -> isize {
         self.step
     }
 
@@ -32,6 +34,32 @@ impl<Payload> Vertex<Payload> {
 
     pub fn set_payload(&mut self, payload: Payload) {
         self.payload = Some(payload);
+    }
+
+    pub fn get_cache(&self) -> &std::collections::HashMap<u32, Vec<u8>> {
+        &self.cache
+    }
+
+    pub fn get_cache_item(&self, key: u32) -> Option<&Vec<u8>> {
+        self.cache.get(&key)
+    }
+    pub fn get_cache_item_mut(&mut self, key: u32) -> Option<&mut Vec<u8>> {
+        self.cache.get_mut(&key)
+    }
+    pub fn remove_cache_item(&mut self, key: u32) -> Option<Vec<u8>> {
+        self.cache.remove(&key)
+    }
+    pub fn contains_cache_item(&self, key: u32) -> bool {
+        self.cache.contains_key(&key)
+    }
+    pub fn set_cache_item(&mut self, key: u32, value: Vec<u8>) {
+        self.cache.insert(key, value);
+    }
+    pub fn get_cache_mut(&mut self) -> &mut std::collections::HashMap<u32, Vec<u8>> {
+        &mut self.cache
+    }
+    pub fn clear_cache(&mut self) {
+        self.cache.clear();
     }
 }
 
@@ -49,7 +77,8 @@ pub struct Graph<Vertex, Edge> {
     edges: FnvHashMap<u32, Vec<(u32, Edge)>>,
 }
 
-impl<Payload> Graph<Vertex<Payload>, Edge<Payload>> {
+impl<Payload> Graph<Vertex<Payload>, Edge<Payload>>
+{
     pub fn new(root_label: &str) -> Self {
         let mut g = Self {
             root_vid: None,
@@ -136,6 +165,8 @@ struct Cursor<'a> {
     current_node: u32,
     g: Box<&'a Graph<Vertex, Edge>>,
     path: Vec<u32>,
+    // hashtable structure with get and set methods and key = number or string value = byte array [plugin on top makes it data specific such as json, py object, pandas data frame, numpy array (new rust version of numpy ndarray)
+    cache: std::collections::HashMap<u32, Vec<u8>>,
 }
 
 impl<'a> Cursor<'a> {
@@ -145,8 +176,46 @@ impl<'a> Cursor<'a> {
             g: Box::new(graph),
             current_node: root,
             path: vec![root],
+            cache: std::collections::HashMap::new(),
         }
     }
+
+    pub fn get_graph(&self) -> &Graph<Vertex, Edge> {
+        self.g.as_ref()
+    }
+
+    pub fn get_root(&self) -> u32 {
+        self.g.root_vid.unwrap()
+    }
+    pub fn get_current_node(&self) -> u32 {
+        self.current_node
+    }
+    pub fn get_cache(&self) -> &std::collections::HashMap<u32, Vec<u8>> {
+        &self.cache
+    }
+
+    pub fn get_cache_item(&self, key: u32) -> Option<&Vec<u8>> {
+        self.cache.get(&key)
+    }
+    pub fn get_cache_item_mut(&mut self, key: u32) -> Option<&mut Vec<u8>> {
+        self.cache.get_mut(&key)
+    }
+    pub fn remove_cache_item(&mut self, key: u32) -> Option<Vec<u8>> {
+        self.cache.remove(&key)
+    }
+    pub fn contains_cache_item(&self, key: u32) -> bool {
+        self.cache.contains_key(&key)
+    }
+    pub fn set_cache_item(&mut self, key: u32, value: Vec<u8>) {
+        self.cache.insert(key, value);
+    }
+    pub fn get_cache_mut(&mut self) -> &mut std::collections::HashMap<u32, Vec<u8>> {
+        &mut self.cache
+    }
+    pub fn clear_cache(&mut self) {
+        self.cache.clear();
+    }
+
 
     pub fn get_node(&self) -> Option<&Vertex> {
         self.g.get_vertex(self.current_node)
