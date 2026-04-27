@@ -4,7 +4,7 @@ use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
-use graphit_core::graph::{Edge, Graph, Vertex};
+use graphit_core::graph::{Cursor, Edge, Graph, Vertex};
 
 type InnerGraph = Graph<Vertex<String>, Edge<String>>;
 
@@ -165,59 +165,39 @@ impl WasmGraph {
     /// Creates a cursor starting at the root vertex.
     #[wasm_bindgen(js_name = cursor)]
     pub fn cursor(&self) -> WasmCursor {
-        let vid = self.0.borrow().root_vid();
-        WasmCursor {
-            current_vid: vid,
-            path: vec![vid],
-            graph: Rc::clone(&self.0),
-            cache: std::collections::HashMap::new(),
-        }
+        WasmCursor(Cursor::new(Rc::clone(&self.0)))
     }
 }
 
 /// A cursor that tracks a position inside a `WasmGraph`.
-///
-/// The cursor holds a shared reference (`Rc`) to the same graph data as the
-/// `WasmGraph` it was created from, so every method works without receiving the
-/// graph as an argument.
+/// Wraps the core `Cursor<String, String>` — all logic lives there.
 #[wasm_bindgen]
-pub struct WasmCursor {
-    current_vid: u32,
-    path: Vec<u32>,
-    graph: Rc<RefCell<InnerGraph>>,
-    cache: std::collections::HashMap<u32, Vec<u8>>,
-}
+pub struct WasmCursor(Cursor<String, String>);
 
 #[wasm_bindgen]
 impl WasmCursor {
     /// Creates a cursor positioned at the root vertex of `graph`.
     #[wasm_bindgen(constructor)]
     pub fn new(graph: &WasmGraph) -> WasmCursor {
-        let vid = graph.0.borrow().root_vid();
-        WasmCursor {
-            current_vid: vid,
-            path: vec![vid],
-            graph: Rc::clone(&graph.0),
-            cache: std::collections::HashMap::new(),
-        }
+        WasmCursor(Cursor::new(Rc::clone(&graph.0)))
     }
 
     /// The VID of the root vertex of the graph this cursor was created from.
     #[wasm_bindgen(getter, js_name = rootVid)]
     pub fn get_root(&self) -> u32 {
-        self.graph.borrow().root_vid()
+        self.0.get_root()
     }
 
     /// The VID the cursor is currently pointing at.
     #[wasm_bindgen(getter, js_name = currentVid)]
     pub fn current_vid(&self) -> u32 {
-        self.current_vid
+        self.0.get_current_node()
     }
 
     /// Returns vertex data for the current position.
     #[wasm_bindgen(js_name = getNode)]
     pub fn get_node(&self) -> Option<WasmVertex> {
-        self.graph.borrow().get_vertex(self.current_vid).map(|v| WasmVertex {
+        self.0.get_node().map(|v| WasmVertex {
             label: v.get_label().to_string(),
             step: v.get_step(),
             payload: v.get_payload().cloned(),
@@ -227,7 +207,7 @@ impl WasmCursor {
     /// Returns the adjacency list for the current vertex.
     #[wasm_bindgen(js_name = getEdges)]
     pub fn get_edges(&self) -> Option<Vec<JsValue>> {
-        self.graph.borrow().get_edges(self.current_vid).map(|edges| {
+        self.0.get_edges().map(|edges| {
             edges
                 .iter()
                 .map(|(target_vid, edge)| {
@@ -244,69 +224,50 @@ impl WasmCursor {
     /// Returns the new VID on success, or `undefined` if the move is not allowed.
     #[wasm_bindgen(js_name = moveTo)]
     pub fn move_to(&mut self, vid: u32) -> Option<u32> {
-        let reachable = self
-            .graph
-            .borrow()
-            .get_edges(self.current_vid)
-            .map(|edges| edges.iter().any(|(t, _)| *t == vid))
-            .unwrap_or(false);
-        if reachable {
-            self.current_vid = vid;
-            self.path.push(vid);
-            Some(vid)
-        } else {
-            None
-        }
+        self.0.move_to(vid)
     }
 
     /// Steps back to the previous vertex in the traversal history.
     /// Returns the previous VID, or `undefined` if already at the root.
     #[wasm_bindgen(js_name = back)]
     pub fn back(&mut self) -> Option<u32> {
-        if self.path.len() > 1 {
-            self.path.pop();
-            let prev = *self.path.last().unwrap();
-            self.current_vid = prev;
-            Some(prev)
-        } else {
-            None
-        }
+        self.0.back()
     }
 
     /// Returns the full traversal history as an array of VIDs, root first.
     #[wasm_bindgen(js_name = getPath)]
     pub fn get_path(&self) -> Vec<u32> {
-        self.path.clone()
+        self.0.get_path()
     }
 
     /// Returns the cache entry for `key` as a `Uint8Array`, or `undefined` if not set.
     #[wasm_bindgen(js_name = getCacheItem)]
     pub fn get_cache_item(&self, key: u32) -> Option<Vec<u8>> {
-        self.cache.get(&key).cloned()
+        self.0.get_cache_item(key).cloned()
     }
 
     /// Removes and returns the cache entry for `key`, or `undefined` if not set.
     #[wasm_bindgen(js_name = removeCacheItem)]
     pub fn remove_cache_item(&mut self, key: u32) -> Option<Vec<u8>> {
-        self.cache.remove(&key)
+        self.0.remove_cache_item(key)
     }
 
     /// Returns `true` if a cache entry exists for `key`.
     #[wasm_bindgen(js_name = containsCacheItem)]
     pub fn contains_cache_item(&self, key: u32) -> bool {
-        self.cache.contains_key(&key)
+        self.0.contains_cache_item(key)
     }
 
     /// Stores `value` in the cache under `key`.
     #[wasm_bindgen(js_name = setCacheItem)]
     pub fn set_cache_item(&mut self, key: u32, value: Vec<u8>) {
-        self.cache.insert(key, value);
+        self.0.set_cache_item(key, value);
     }
 
     /// Removes all entries from the cache.
     #[wasm_bindgen(js_name = clearCache)]
     pub fn clear_cache(&mut self) {
-        self.cache.clear();
+        self.0.clear_cache();
     }
 }
 

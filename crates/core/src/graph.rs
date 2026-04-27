@@ -1,8 +1,10 @@
 use crate::helper::get_rand_vid;
 use fnv::FnvHashMap;
+use std::cell::RefCell;
 use std::fmt::Debug;
+use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Vertex<Payload = ()> {
     label: String,
     step: isize,
@@ -64,7 +66,7 @@ impl<Payload> Vertex<Payload> {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Edge<Payload = ()> {
     Unidirectional(Option<Payload>),
     Bidirectional(Option<Payload>),
@@ -179,89 +181,64 @@ impl<VP, EP> Graph<Vertex<VP>, Edge<EP>>
     }
 }
 
-struct Cursor<'a> {
+// key = number, value = byte array; plugins on top interpret the bytes as
+// domain-specific types (JSON, numpy array, pandas DataFrame, etc.)
+pub struct Cursor<VP, EP> {
     current_node: u32,
-    g: Box<&'a Graph<Vertex, Edge>>,
+    graph: Rc<RefCell<Graph<Vertex<VP>, Edge<EP>>>>,
     path: Vec<u32>,
-    // hashtable structure with get and set methods and key = number or string value = byte array [plugin on top makes it data specific such as json, py object, pandas data frame, numpy array (new rust version of numpy ndarray)
     cache: std::collections::HashMap<u32, Vec<u8>>,
 }
 
-impl<'a> Cursor<'a> {
-    pub fn new(graph: &'a Graph<Vertex, Edge>) -> Self {
-        let root = graph.root_vid;
+impl<VP: Clone, EP: Clone> Cursor<VP, EP> {
+    pub fn new(graph: Rc<RefCell<Graph<Vertex<VP>, Edge<EP>>>>) -> Self {
+        let root = graph.borrow().root_vid();
         Cursor {
-            g: Box::new(graph),
             current_node: root,
+            graph,
             path: vec![root],
             cache: std::collections::HashMap::new(),
         }
     }
 
-    pub fn get_graph(&self) -> &Graph<Vertex, Edge> {
-        self.g.as_ref()
+    pub fn get_graph(&self) -> Rc<RefCell<Graph<Vertex<VP>, Edge<EP>>>> {
+        Rc::clone(&self.graph)
     }
 
     pub fn get_root(&self) -> u32 {
-        self.g.root_vid
+        self.graph.borrow().root_vid()
     }
+
     pub fn get_current_node(&self) -> u32 {
         self.current_node
     }
-    pub fn get_cache(&self) -> &std::collections::HashMap<u32, Vec<u8>> {
-        &self.cache
+
+    pub fn get_node(&self) -> Option<Vertex<VP>> {
+        self.graph.borrow().get_vertex(self.current_node).cloned()
     }
 
-    pub fn get_cache_item(&self, key: u32) -> Option<&Vec<u8>> {
-        self.cache.get(&key)
-    }
-    pub fn get_cache_item_mut(&mut self, key: u32) -> Option<&mut Vec<u8>> {
-        self.cache.get_mut(&key)
-    }
-    pub fn remove_cache_item(&mut self, key: u32) -> Option<Vec<u8>> {
-        self.cache.remove(&key)
-    }
-    pub fn contains_cache_item(&self, key: u32) -> bool {
-        self.cache.contains_key(&key)
-    }
-    pub fn set_cache_item(&mut self, key: u32, value: Vec<u8>) {
-        self.cache.insert(key, value);
-    }
-    pub fn get_cache_mut(&mut self) -> &mut std::collections::HashMap<u32, Vec<u8>> {
-        &mut self.cache
-    }
-    pub fn clear_cache(&mut self) {
-        self.cache.clear();
-    }
-
-
-    pub fn get_node(&self) -> Option<&Vertex> {
-        self.g.get_vertex(self.current_node)
-    }
-    pub fn get_edges(&self) -> Option<&Vec<(u32, Edge)>> {
-        self.g.get_edges(self.current_node)
+    pub fn get_edges(&self) -> Option<Vec<(u32, Edge<EP>)>> {
+        self.graph.borrow().get_edges(self.current_node).cloned()
     }
 
     pub fn get_path(&self) -> Vec<u32> {
         self.path.clone()
     }
+
     pub fn move_to(&mut self, vid: u32) -> Option<u32> {
-        let available_vids = self
-            .get_edges()
-            .map(|edges| edges.iter().map(|e| e.0).collect::<Vec<u32>>());
-        match available_vids {
-            Some(v) => {
-                if v.contains(&vid) {
-                    self.current_node = vid;
-                    self.path.push(vid);
-                    Some(vid)
-                } else {
-                    None
-                }
-            }
-            None => None,
+        let reachable = self.graph.borrow()
+            .get_edges(self.current_node)
+            .map(|edges| edges.iter().any(|(t, _)| *t == vid))
+            .unwrap_or(false);
+        if reachable {
+            self.current_node = vid;
+            self.path.push(vid);
+            Some(vid)
+        } else {
+            None
         }
     }
+
     pub fn back(&mut self) -> Option<u32> {
         if self.path.len() > 1 {
             self.path.pop();
@@ -271,6 +248,38 @@ impl<'a> Cursor<'a> {
         } else {
             None
         }
+    }
+
+    pub fn get_cache(&self) -> &std::collections::HashMap<u32, Vec<u8>> {
+        &self.cache
+    }
+
+    pub fn get_cache_item(&self, key: u32) -> Option<&Vec<u8>> {
+        self.cache.get(&key)
+    }
+
+    pub fn get_cache_item_mut(&mut self, key: u32) -> Option<&mut Vec<u8>> {
+        self.cache.get_mut(&key)
+    }
+
+    pub fn remove_cache_item(&mut self, key: u32) -> Option<Vec<u8>> {
+        self.cache.remove(&key)
+    }
+
+    pub fn contains_cache_item(&self, key: u32) -> bool {
+        self.cache.contains_key(&key)
+    }
+
+    pub fn set_cache_item(&mut self, key: u32, value: Vec<u8>) {
+        self.cache.insert(key, value);
+    }
+
+    pub fn get_cache_mut(&mut self) -> &mut std::collections::HashMap<u32, Vec<u8>> {
+        &mut self.cache
+    }
+
+    pub fn clear_cache(&mut self) {
+        self.cache.clear();
     }
 }
 
@@ -296,8 +305,8 @@ mod tests {
 
     #[test]
     fn cursor_moves() {
-        let graph = sample_graph();
-        let mut cursor = Cursor::new(&graph);
+        let graph = Rc::new(RefCell::new(sample_graph()));
+        let mut cursor = Cursor::new(Rc::clone(&graph));
         let available_vids = cursor
             .get_edges()
             .map(|edges| edges.iter().map(|e| e.0).collect::<Vec<u32>>());
