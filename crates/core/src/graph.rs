@@ -70,47 +70,53 @@ pub enum Edge<Payload = ()> {
     Bidirectional(Option<Payload>),
 }
 
+impl<Payload> Edge<Payload> {
+    pub fn get_payload(&self) -> Option<&Payload> {
+        match self {
+            Edge::Unidirectional(p) | Edge::Bidirectional(p) => p.as_ref(),
+        }
+    }
+
+    pub fn set_payload(&mut self, payload: Payload) {
+        match self {
+            Edge::Unidirectional(p) | Edge::Bidirectional(p) => *p = Some(payload),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Graph<Vertex, Edge> {
-    root_vid: Option<u32>,
+    root_vid: u32,
     vertices: FnvHashMap<u32, Vertex>,
     edges: FnvHashMap<u32, Vec<(u32, Edge)>>,
 }
 
-impl<Payload> Graph<Vertex<Payload>, Edge<Payload>>
+impl<VP, EP> Graph<Vertex<VP>, Edge<EP>>
 {
     pub fn new(root_label: &str) -> Self {
-        let mut g = Self {
-            root_vid: None,
-            vertices: FnvHashMap::default(),
-            edges: FnvHashMap::default(),
-        };
         let vid = get_rand_vid(2, u32::MAX);
-        g.add_vertex(&vid, Vertex::<Payload>::new(root_label, None, None));
-        g
+        let mut vertices = FnvHashMap::default();
+        vertices.insert(vid, Vertex::<VP>::new(root_label, None, None));
+        Self {
+            root_vid: vid,
+            vertices,
+            edges: FnvHashMap::default(),
+        }
     }
 
-    /// Adds a vertex to the graph. If the graph is empty, the vertex is the root.
-    pub fn add_vertex(&mut self, vid: &u32, vertex: Vertex<Payload>) -> u32 {
-        if self.root_vid.is_none() {
-            self.root_vid = Some(*vid);
-        }
+    /// Adds a vertex to the graph. Returns the VID of the inserted vertex.
+    pub fn add_vertex(&mut self, vid: &u32, vertex: Vertex<VP>) -> u32 {
         self.vertices.insert(*vid, vertex);
-        self.root_vid.unwrap()
+        *vid
     }
 
     pub fn add_child(
         &mut self,
         parent_vid: &u32,
-        mut child: Vertex<Payload>,
-        edge_type: Option<Edge<Payload>>,
+        mut child: Vertex<VP>,
+        edge_type: Option<Edge<EP>>,
     ) -> Option<u32> {
         let rand_vid = get_rand_vid(2, u32::MAX);
-
-        if self.root_vid.is_none() {
-            self.add_vertex(parent_vid, child);
-            return Some(*parent_vid);
-        }
 
         if self.vertices.contains_key(&parent_vid) {
             let p_step = self.vertices.get(&parent_vid).unwrap().step;
@@ -137,25 +143,37 @@ impl<Payload> Graph<Vertex<Payload>, Edge<Payload>>
         None
     }
 
-    pub fn add_edge(&mut self, from: u32, to: u32, value: Edge<Payload>) {
+    pub fn add_edge(&mut self, from: u32, to: u32, value: Edge<EP>) {
         self.edges.entry(from).or_default().push((to, value));
     }
 
-    pub fn get_vertex(&self, vid: u32) -> Option<&Vertex<Payload>> {
+    pub fn get_vertex(&self, vid: u32) -> Option<&Vertex<VP>> {
         self.vertices.get(&vid)
     }
 
-    pub fn get_edges(&self, vid: u32) -> Option<&Vec<(u32, Edge<Payload>)>> {
+    pub fn get_edges(&self, vid: u32) -> Option<&Vec<(u32, Edge<EP>)>> {
         self.edges.get(&vid)
     }
 
-    pub fn root_vid(&self) -> Option<u32> {
+    pub fn root_vid(&self) -> u32 {
         self.root_vid
     }
 
-    pub fn set_payload(&mut self, vid: u32, payload: Payload) -> bool {
+    pub fn set_vertex_payload(&mut self, vid: u32, payload: VP) -> bool {
         match self.vertices.get_mut(&vid) {
             Some(v) => { v.set_payload(payload); true }
+            None => false,
+        }
+    }
+
+    pub fn set_edge_payload(&mut self, from: u32, to: u32, payload: EP) -> bool {
+        match self.edges.get_mut(&from) {
+            Some(edges) => {
+                match edges.iter_mut().find(|(t, _)| *t == to) {
+                    Some((_, edge)) => { edge.set_payload(payload); true }
+                    None => false,
+                }
+            }
             None => false,
         }
     }
@@ -171,7 +189,7 @@ struct Cursor<'a> {
 
 impl<'a> Cursor<'a> {
     pub fn new(graph: &'a Graph<Vertex, Edge>) -> Self {
-        let root = graph.root_vid.unwrap();
+        let root = graph.root_vid;
         Cursor {
             g: Box::new(graph),
             current_node: root,
@@ -185,7 +203,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn get_root(&self) -> u32 {
-        self.g.root_vid.unwrap()
+        self.g.root_vid
     }
     pub fn get_current_node(&self) -> u32 {
         self.current_node
@@ -263,7 +281,7 @@ mod tests {
     #[test]
     fn build_graph() {
         let graph = sample_graph();
-        let root_id = graph.root_vid.unwrap();
+        let root_id = graph.root_vid;
         match graph.get_vertex(root_id) {
             Some(vertex) => {
                 assert_eq!(vertex.label, "Start");
@@ -303,7 +321,7 @@ mod tests {
     fn sample_graph() -> Graph<Vertex, Edge> {
         let mut graph = Graph::new("Start");
 
-        let root_id = graph.root_vid.unwrap();
+        let root_id = graph.root_vid;
 
         let new_pricing_strategy_id = graph
             .add_child(

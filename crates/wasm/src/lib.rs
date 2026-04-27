@@ -1,11 +1,15 @@
 mod helper;
 use std::option::Option;
 use std::fmt;
+use std::rc::Rc;
+use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use graphit_core::graph::{Edge, Graph, Vertex};
 
+type InnerGraph = Graph<Vertex<String>, Edge<String>>;
+
 #[wasm_bindgen]
-pub struct WasmGraph(Graph<Vertex<String>, Edge<String>>);
+pub struct WasmGraph(Rc<RefCell<InnerGraph>>);
 
 /// Vertex data returned from `WasmGraph::get_vertex`.
 #[wasm_bindgen]
@@ -67,15 +71,15 @@ impl WasmEdgeEntry {
 impl WasmGraph {
     /// Returns the VID of the root vertex, or `undefined` if the graph is empty.
     #[wasm_bindgen(getter, js_name = rootVid)]
-    pub fn root_vid(&self) -> Option<u32> {
-        self.0.root_vid()
+    pub fn root_vid(&self) -> u32 {
+        self.0.borrow().root_vid()
     }
 
     /// Adds a vertex with a generated VID and the given `label`.
-    /// Returns the root VID (mirrors the core behaviour of `add_vertex`).
+    /// Adds a vertex with the given `vid` and `label`. Returns `vid`.
     #[wasm_bindgen(js_name = addVertex)]
     pub fn add_vertex(&mut self, vid: u32, label: &str) -> u32 {
-        self.0.add_vertex(&vid, Vertex::new(label, None, None))
+        self.0.borrow_mut().add_vertex(&vid, Vertex::new(label, None, None))
     }
 
     /// Adds a child vertex under `parent_vid`.
@@ -88,7 +92,7 @@ impl WasmGraph {
         } else {
             None
         };
-        self.0.add_child(&parent_vid, Vertex::new(label, None, None), edge)
+        self.0.borrow_mut().add_child(&parent_vid, Vertex::new(label, None, None), edge)
     }
 
     /// Adds a bare edge between two existing vertices.
@@ -99,13 +103,13 @@ impl WasmGraph {
         } else {
             Edge::Unidirectional(None)
         };
-        self.0.add_edge(from, to, edge);
+        self.0.borrow_mut().add_edge(from, to, edge);
     }
 
     /// Returns the vertex for `vid`, or `undefined` if not found.
     #[wasm_bindgen(js_name = getVertex)]
     pub fn get_vertex(&self, vid: u32) -> Option<WasmVertex> {
-        self.0.get_vertex(vid).map(|v| WasmVertex {
+        self.0.borrow().get_vertex(vid).map(|v| WasmVertex {
             label: v.get_label().to_string(),
             step: v.get_step(),
             payload: v.get_payload().cloned(),
@@ -116,7 +120,7 @@ impl WasmGraph {
     /// or `undefined` if `vid` has no edges.
     #[wasm_bindgen(js_name = getEdges)]
     pub fn get_edges(&self, vid: u32) -> Option<Vec<JsValue>> {
-        self.0.get_edges(vid).map(|edges| {
+        self.0.borrow().get_edges(vid).map(|edges| {
             edges
                 .iter()
                 .map(|(target_vid, edge)| {
@@ -134,62 +138,74 @@ impl WasmGraph {
     /// Returns `true` on success, `false` if `vid` does not exist.
     #[wasm_bindgen(js_name = setPayload)]
     pub fn set_payload(&mut self, vid: u32, data_str: String) -> bool {
-        self.0.set_payload(vid, data_str)
+        self.0.borrow_mut().set_vertex_payload(vid, data_str)
     }
 
+    /// Stores a JSON string as the payload of the edge from `from` to `to`.
+    /// Returns `true` on success, `false` if the edge does not exist.
     #[wasm_bindgen(js_name = setEdgePayload)]
-    pub fn set_edge_payload(&mut self, eid: u32, data_str: String) -> bool {
-        match self.0.get_edges(eid.try_into().unwrap()) {
-            Some(_edge) => {
-                self.0.set_payload(eid, data_str);
-                true
-            }
-            None => false,
-        }
+    pub fn set_edge_payload(&mut self, from: u32, to: u32, data_str: String) -> bool {
+        self.0.borrow_mut().set_edge_payload(from, to, data_str)
     }
 
+    /// Returns the payload of the edge from `from` to `to`, or `undefined` if not set.
     #[wasm_bindgen(js_name = getEdgePayload)]
-    pub fn get_edge_payload(&self, eid: u32) -> Option<String> {
-        self.0.get_vertex(eid)?.get_payload().cloned()
+    pub fn get_edge_payload(&self, from: u32, to: u32) -> Option<String> {
+        self.0.borrow().get_edges(from)?.iter()
+            .find(|(t, _)| *t == to)
+            .and_then(|(_, edge)| edge.get_payload().cloned())
     }
 
     /// Returns the JSON payload of vertex `vid`, or `undefined` if none is set.
     #[wasm_bindgen(js_name = getPayload)]
     pub fn get_payload(&self, vid: u32) -> Option<String> {
-        self.0.get_vertex(vid)?.get_payload().cloned()
+        self.0.borrow().get_vertex(vid)?.get_payload().cloned()
     }
 
     /// Creates a cursor starting at the root vertex.
-    /// Returns `undefined` if the graph has no root yet.
     #[wasm_bindgen(js_name = cursor)]
-    pub fn cursor(&self) -> Option<WasmCursor> {
-        self.0.root_vid().map(|vid| WasmCursor { current_vid: vid, path: vec![vid] })
+    pub fn cursor(&self) -> WasmCursor {
+        let vid = self.0.borrow().root_vid();
+        WasmCursor {
+            current_vid: vid,
+            path: vec![vid],
+            graph: Rc::clone(&self.0),
+            cache: std::collections::HashMap::new(),
+        }
     }
 }
 
 /// A cursor that tracks a position inside a `WasmGraph`.
 ///
-/// Because `wasm-bindgen` cannot express lifetime parameters on exported types,
-/// the cursor owns only the current VID and receives a `&WasmGraph` on each
-/// operation — mirroring the core `Cursor` interface.
+/// The cursor holds a shared reference (`Rc`) to the same graph data as the
+/// `WasmGraph` it was created from, so every method works without receiving the
+/// graph as an argument.
 #[wasm_bindgen]
 pub struct WasmCursor {
     current_vid: u32,
     path: Vec<u32>,
+    graph: Rc<RefCell<InnerGraph>>,
+    cache: std::collections::HashMap<u32, Vec<u8>>,
 }
 
 #[wasm_bindgen]
 impl WasmCursor {
     /// Creates a cursor positioned at the root vertex of `graph`.
-    /// Mirrors `Cursor::new(&graph)` from core.
-    /// Throws if the graph has no root vertex.
     #[wasm_bindgen(constructor)]
-    pub fn new(graph: &WasmGraph) -> Result<WasmCursor, JsValue> {
-        graph
-            .0
-            .root_vid()
-            .map(|vid| WasmCursor { current_vid: vid, path: vec![vid] })
-            .ok_or_else(|| JsValue::from_str("Graph has no root vertex"))
+    pub fn new(graph: &WasmGraph) -> WasmCursor {
+        let vid = graph.0.borrow().root_vid();
+        WasmCursor {
+            current_vid: vid,
+            path: vec![vid],
+            graph: Rc::clone(&graph.0),
+            cache: std::collections::HashMap::new(),
+        }
+    }
+
+    /// The VID of the root vertex of the graph this cursor was created from.
+    #[wasm_bindgen(getter, js_name = rootVid)]
+    pub fn get_root(&self) -> u32 {
+        self.graph.borrow().root_vid()
     }
 
     /// The VID the cursor is currently pointing at.
@@ -200,8 +216,8 @@ impl WasmCursor {
 
     /// Returns vertex data for the current position.
     #[wasm_bindgen(js_name = getNode)]
-    pub fn get_node(&self, graph: &WasmGraph) -> Option<WasmVertex> {
-        graph.0.get_vertex(self.current_vid).map(|v| WasmVertex {
+    pub fn get_node(&self) -> Option<WasmVertex> {
+        self.graph.borrow().get_vertex(self.current_vid).map(|v| WasmVertex {
             label: v.get_label().to_string(),
             step: v.get_step(),
             payload: v.get_payload().cloned(),
@@ -210,8 +226,8 @@ impl WasmCursor {
 
     /// Returns the adjacency list for the current vertex.
     #[wasm_bindgen(js_name = getEdges)]
-    pub fn get_edges(&self, graph: &WasmGraph) -> Option<Vec<JsValue>> {
-        graph.0.get_edges(self.current_vid).map(|edges| {
+    pub fn get_edges(&self) -> Option<Vec<JsValue>> {
+        self.graph.borrow().get_edges(self.current_vid).map(|edges| {
             edges
                 .iter()
                 .map(|(target_vid, edge)| {
@@ -227,9 +243,10 @@ impl WasmCursor {
     /// Moves the cursor to `vid` if it is a direct neighbour of the current vertex.
     /// Returns the new VID on success, or `undefined` if the move is not allowed.
     #[wasm_bindgen(js_name = moveTo)]
-    pub fn move_to(&mut self, graph: &WasmGraph, vid: u32) -> Option<u32> {
-        let reachable = graph
-            .0
+    pub fn move_to(&mut self, vid: u32) -> Option<u32> {
+        let reachable = self
+            .graph
+            .borrow()
             .get_edges(self.current_vid)
             .map(|edges| edges.iter().any(|(t, _)| *t == vid))
             .unwrap_or(false);
@@ -261,10 +278,40 @@ impl WasmCursor {
     pub fn get_path(&self) -> Vec<u32> {
         self.path.clone()
     }
+
+    /// Returns the cache entry for `key` as a `Uint8Array`, or `undefined` if not set.
+    #[wasm_bindgen(js_name = getCacheItem)]
+    pub fn get_cache_item(&self, key: u32) -> Option<Vec<u8>> {
+        self.cache.get(&key).cloned()
+    }
+
+    /// Removes and returns the cache entry for `key`, or `undefined` if not set.
+    #[wasm_bindgen(js_name = removeCacheItem)]
+    pub fn remove_cache_item(&mut self, key: u32) -> Option<Vec<u8>> {
+        self.cache.remove(&key)
+    }
+
+    /// Returns `true` if a cache entry exists for `key`.
+    #[wasm_bindgen(js_name = containsCacheItem)]
+    pub fn contains_cache_item(&self, key: u32) -> bool {
+        self.cache.contains_key(&key)
+    }
+
+    /// Stores `value` in the cache under `key`.
+    #[wasm_bindgen(js_name = setCacheItem)]
+    pub fn set_cache_item(&mut self, key: u32, value: Vec<u8>) {
+        self.cache.insert(key, value);
+    }
+
+    /// Removes all entries from the cache.
+    #[wasm_bindgen(js_name = clearCache)]
+    pub fn clear_cache(&mut self) {
+        self.cache.clear();
+    }
 }
 
 /// Creates a new graph with a root vertex labelled `name`.
 #[wasm_bindgen(js_name = createGraph)]
 pub fn create_graph(name: &str) -> WasmGraph {
-    WasmGraph(Graph::<Vertex<String>, Edge<String>>::new(name))
+    WasmGraph(Rc::new(RefCell::new(InnerGraph::new(name))))
 }
