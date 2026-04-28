@@ -157,6 +157,22 @@ impl<VP, EP> Graph<Vertex<VP>, Edge<EP>>
         self.edges.get(&vid)
     }
 
+    pub fn get_children(&self) -> Option<Vec<Vertex<VP>>> where VP: Clone {
+        self.edges.get(&self.root_vid).map(|edges| {
+            edges
+                .iter()
+                .filter_map(|(target_vid, edge)| {
+                    if matches!(edge, Edge::Unidirectional(_) | Edge::Bidirectional(_)) {
+                        self.vertices.get(target_vid)
+                    } else {
+                        None
+                    }
+                })
+                .cloned()
+                .collect()
+        })
+    }
+
     pub fn root_vid(&self) -> u32 {
         self.root_vid
     }

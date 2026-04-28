@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "graphit"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "getrandom",
  "graphit-core",
@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "graphit-core"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "fnv",
  "rand",
@@ -101,7 +101,7 @@ dependencies = [
 
 [[package]]
 name = "graphit-utils"
-version = "0.0.7"
+version = "0.0.71"
 dependencies = [
  "rand",
 ]

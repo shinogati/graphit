@@ -156,6 +156,22 @@ impl WasmGraph {
             .and_then(|(_, edge)| edge.get_payload().cloned())
     }
 
+    /// Returns the children of the root vertex as an array of `WasmVertex`,
+    /// or `undefined` if the root has no outgoing edges.
+    #[wasm_bindgen(js_name = getChildren)]
+    pub fn get_children(&self) -> Option<Vec<JsValue>> {
+        self.0.borrow().get_children().map(|children| {
+            children
+                .into_iter()
+                .map(|v| JsValue::from(WasmVertex {
+                    label: v.get_label().to_string(),
+                    step: v.get_step(),
+                    payload: v.get_payload().cloned(),
+                }))
+                .collect()
+        })
+    }
+
     /// Returns the JSON payload of vertex `vid`, or `undefined` if none is set.
     #[wasm_bindgen(js_name = getPayload)]
     pub fn get_payload(&self, vid: u32) -> Option<String> {
@@ -268,6 +284,12 @@ impl WasmCursor {
     #[wasm_bindgen(js_name = clearCache)]
     pub fn clear_cache(&mut self) {
         self.0.clear_cache();
+    }
+
+    /// Returns the graph this cursor was created from.
+    #[wasm_bindgen(js_name = getGraph)]
+    pub fn get_graph(&self) -> WasmGraph {
+        WasmGraph(self.0.get_graph())
     }
 }
 
